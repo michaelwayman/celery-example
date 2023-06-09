@@ -50,14 +50,14 @@ class FileWatcher:
         return statinfo.st_atime_ns
 
     async def watch(self, on_change):
-        last_modified = {}
+        last_modified = {file: self.last_modified(file) for file in self.files}
         while True:
             for file in self.files:
                 modified = self.last_modified(file)
                 if modified > last_modified.get(file, modified):
                     if asyncio.iscoroutinefunction(on_change):
                         await on_change(file)
-                last_modified[file] = modified
+                    last_modified[file] = modified
             await asyncio.sleep(1)
 
 
