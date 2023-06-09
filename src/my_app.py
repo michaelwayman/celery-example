@@ -1,4 +1,4 @@
-from tasks import tweet_me
+from tasks import task_1
 
 if __name__ == "__main__":
-    tweet_me.delay("HELLO WORLD")
+    task_1.delay("Hello world =)")

@@ -1,13 +1,19 @@
-FROM python:3.10
+FROM python:3.10-slim
+
+RUN apt-get update && apt-get install -y procps
 
 WORKDIR /app
 
 COPY install_poetry.py .
 COPY pyproject.toml .
 
-RUN [ "python3", "install_poetry.py" ]
-ENV PATH="${PATH}:/root/.poetry/bin:/root/.local/bin"
-RUN /bin/bash -c 'poetry update && poetry install'
+ENV PATH="${PATH}:/root/.poetry/bin:/root/.local/bin:/app"
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV PYTHONPATH=/app/src
 
-WORKDIR /app/src
-CMD [ "poetry", "run", "celery", "-A", "tasks", "worker", "--loglevel=INFO" ]
+RUN /bin/bash -c 'python3 install_poetry.py && poetry update && poetry env use 3.10 && poetry install'
+
+COPY bin/auto_reload.py .
+COPY bin/entrypoint.sh .
+
+CMD [ "entrypoint.sh", "celery --app=tasks:app worker --loglevel=INFO -n docker@%h" ]

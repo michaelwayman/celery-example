@@ -13,7 +13,11 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile.celery
+    command:
+      - entrypoint.sh
+      - celery --app=tasks:app worker --loglevel=INFO -n docker@%h
     restart: always
+    init: true
     environment:
       - CELERY_BROKER=redis://redis:6379/0
     volumes:
