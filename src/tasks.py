@@ -1,35 +1,39 @@
+from time import sleep
+
+from celery import shared_task, Task
 from celery.utils.log import get_task_logger
-import multiprocessing
 
 from celery_app import app
-from utils import make_sync
 
 logger = get_task_logger(__name__)
 
 
-@app.task(bind=True)
-def task_1(self, throw=False):
-    logger.warning(f"PID: {multiprocessing.current_process().pid}")
-    logger.warning(f"app.conf.task_always_eager={app.conf.task_always_eager}")
-    if throw:
-        raise ValueError("Teehee")
+class BaseTask(Task):
+    # store_errors_even_if_ignored = True
+    # track_started = True
+    # acks_late = True
+    # ignore_result = False
+
+    # def on_success(self, retval, task_id, args, kwargs):
+    #     logger.warning(("on_success", retval, task_id, args, kwargs))
+    #
+    # def on_failure(self, exc, task_id, args, kwargs, einfo):
+    #     logger.warning(("on_failure", exc, task_id, args, kwargs, einfo))
+    #
+    # def before_start(self, task_id, args, kwargs):
+    #     logger.warning(("before_start", task_id, args, kwargs))
+    #
+    # def after_return(self, status, retval, task_id, args, kwargs, einfo):
+    #     logger.warning(("after_return", status, retval, task_id, args, kwargs, einfo))
+    #
+    # def on_retry(self, exc, task_id, args, kwargs, einfo):
+    #     logger.warning(("on_retry", exc, task_id, args, kwargs, einfo))
+    ...
 
 
-@app.task(bind=True)
-def always_eager_then_sleep(self, seconds):
-    with make_sync():
-        logger.warning(f"PID: {multiprocessing.current_process().pid}")
-        logger.warning(f"app.conf.task_always_eager={app.conf.task_always_eager}")
-        sleep_task.delay(seconds)
-        try:
-            task_1.delay(throw=True)
-        except ValueError:
-            logger.error("Errors propagate with always_eager")
-
-
-@app.task(bind=True)
-def sleep_task(self, seconds):
-    logger.warning(f"PID: {multiprocessing.current_process().pid}")
-    logger.warning(f"app.conf.task_always_eager={app.conf.task_always_eager}")
-    import time
-    time.sleep(seconds)
+@shared_task(bind=True, base=BaseTask)
+def recursive_task(self, name, count: int = 15):
+    logger.warning(f"NAME: {name}, COUNT: {count}")
+    sleep(1)
+    if count > 0:
+        recursive_task.apply_async(args=[name], kwargs={"count": count - 1})

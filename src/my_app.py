@@ -1,13 +1,15 @@
-import time
+from string import ascii_letters
+
 import tasks
+import random
+
+from celery_app import app
 
 
-def test_always_eager_localized():
-    tasks.always_eager_then_sleep.delay(10)
-    time.sleep(1)
-    tasks.task_1.delay(3)
-    tasks.sleep_task.delay(10)
+def main():
+    task_name = "".join(random.choices(ascii_letters, k=8))
+    tasks.recursive_task.apply_async(args=[task_name])
 
 
 if __name__ == "__main__":
-    test_always_eager_localized()
+    main()
